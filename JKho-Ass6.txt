@@ -1,0 +1,177 @@
+1)How many containers of antibiotics are currently available?
+Query:
+SELECT itemValue
+FROM item
+WHERE itemDescription = ("bottle of antibiotics");
+Answer: 125
+
+2)Which volunteer(s), if any, have phone numbers that do not start with the number 2 and whose last name is not Jones.  Query should retrieve names rather than ids.
+Query:
+SELECT volunteerName
+FROM volunteer
+WHERE volunteerTelephone NOT LIKE "2%" AND volunteerName NOT LIKE "%Jones";
+Answer: Gene Lewin
+
+3)Which volunteer(s) are working on transporting tasks?  Query should retrieve names rather than ids.
+Query:
+SELECT volunteer.volunteerName
+FROM assignment
+JOIN volunteer ON volunteer.volunteerId = assignment.volunteerId
+JOIN task ON assignment.taskCode = task.taskCode
+JOIN task_type ON task.taskTypeId = task_type.taskTypeId
+WHERE task_type.taskTypeName = ("transporting");
+Answer: George Brewer
+
+4)Which task(s) have yet to be assigned to any volunteers (provide task descriptions, not the codes?
+Query:
+SELECT taskDescription
+FROM task
+LEFT JOIN assignment ON assignment.taskCode = task.taskCode
+WHERE assignment.volunteerId IS NULL;
+Answer: Prepare 100 food packages, Take packages to the warehouse
+
+
+5)Which type(s) of package contain some kind of bottle?
+Query:
+SELECT DISTINCT (packageTypeName)
+FROM package_type
+JOIN package ON package.packageTypeId = package_type.packageTypeId
+JOIN package_contents ON package.packageId = package_contents.packageId
+JOIN item ON item.itemId = package_contents.itemId
+WHERE item.itemDescription LIKE "%bottle%";
+Answer: food and water
+
+6)Which items, if any, are not in any packages?  Answer should be item descriptions.
+Query:
+SELECT itemDescription
+FROM item
+LEFT JOIN package_contents ON item.itemId = package_contents.itemId
+WHERE package_contents.packageId IS NULL;
+Answer: bottle of antibiotics, bottle of aspirin, flashlight, pack of bandages
+
+7)Which task(s) are assigned to volunteer(s) that live in New Jersey (NJ)?  Answer should have the task description and not the task ids.
+Query:
+SELECT DISTINCT taskDescription
+FROM task
+JOIN assignment ON assignment.taskCode = task.taskCode
+JOIN volunteer ON volunteer.volunteerId = assignment.volunteerId
+WHERE volunteer.volunteerAddress LIKE "%NJ";
+Answer: Prepare 5,000 packages, Prepare 20 children's packages, Prepare 100 water packages
+
+8)Which volunteers began their assignments in the first half of 2021?  Answer should have the volunteer names and not their ids.
+Query:
+SELECT volunteerName
+FROM volunteer
+JOIN assignment ON assignment.volunteerId = volunteer.volunteerId
+WHERE assignment.startDateTime BETWEEN "2021-01-01" AND "2021-06-30";
+Answer: Joan Simmons, Chris Jordan
+
+9)Which volunteers have been assigned to tasks that include packing spam?  Answer should have the volunteer names and not their ids.
+Query:
+SELECT DISTINCT volunteerName
+FROM volunteer
+JOIN assignment ON assignment.volunteerId = volunteer.volunteerId
+JOIN task on task.taskCode = assignment.taskCode
+JOIN package ON package.taskCode = task.taskCode
+JOIN package_contents ON package.packageId = package_contents.packageId
+JOIN item on package_contents.itemId = item.itemId
+WHERE item.itemDescription = "can of spam";
+Answer: Julie White, Gerry Banks
+
+
+10)Which item(s) (if any) have a total value of exactly $100 in one package?  Answer should be item descriptions.
+Query:
+SELECT itemDescription
+FROM item
+RIGHT JOIN package_contents ON item.itemId = package_contents.itemId
+WHERE package_contents.itemQuantity*item.itemValue = 100;
+Answer: Baby formula
+
+
+11)How many volunteers are assigned to tasks with each different status?   The answer should show each different status and the number of volunteers sorted from highest to lowest)
+Query:
+SELECT task_status.taskStatusName, count(volunteer.volunteerId) AS volunteerCount
+FROM task_status
+JOIN task ON task.taskStatusId = task_status.taskStatusId
+JOIN assignment on assignment.taskCode = task.taskCode
+JOIN volunteer on volunteer.volunteerId = assignment.volunteerId
+GROUP BY task_status.taskStatusName
+ORDER BY volunteerCount DESC;
+Answer:
+taskStatusName, volunteerCount
+open, 4
+closed, 4
+ongoing, 2
+pending, 1
+
+12)Which task creates the heaviest set of packages and what is the weight?  Show both the taskCode and the weight (You should be able to do this without using any sub-queries).
+Query:
+SELECT task.taskDescription, sum(package.packageWeight) as totalPackageWeight
+FROM task
+JOIN package ON package.taskCode = task.taskCode
+GROUP BY task.taskCode
+ORDER BY totalPackageWeight DESC LIMIT 1;
+Answer:
+taskDescription, totalPackageWeight
+Prepare 100 water packages, 308
+
+13)How many tasks are there that do not have a type of “packing”?
+Query:
+SELECT count(taskCode) AS taskCount
+FROM task
+JOIN task_type ON task.taskTypeId = task_type.taskTypeId
+WHERE task_type.taskTypeName NOT LIKE "packing";
+Answer:
+3
+
+14)Of those items that have been packed, which item (or items) were touched by fewer than 3 volunteers?  Answer should be item descriptions.
+Query:
+SELECT item.itemDescription
+FROM item
+JOIN package_contents ON package_contents.itemId = item.itemId
+JOIN package ON package.packageId = package_contents.packageId
+JOIN task ON package.taskCode = task.taskCode
+JOIN assignment ON assignment.taskCode = task.taskCode
+GROUP BY item.itemId
+HAVING count(DISTINCT assignment.volunteerId) < 3;
+Answer: women's coat, tent, sleeping bag, men's coat, dried fruit, can of spam
+
+15)Which packages have a total value of more than 100?  Show the packageIds and their value sorted from lowest to highest.
+Query:
+SELECT package.packageId, sum(item.itemValue * package_contents.itemQuantity) AS totalPackageValue
+FROM item
+JOIN package_contents ON package_contents.itemId = item.itemId
+JOIN package ON package.packageId = package_contents.packageId
+GROUP BY package.packageId
+HAVING totalPackageValue > 100
+ORDER BY totalPackageValue;
+Answer:
+packageId, totalPackageValue
+6, 150
+2, 151
+4, 350
+10, 750
+5, 1420
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
